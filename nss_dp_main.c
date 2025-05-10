@@ -16,6 +16,8 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "nss_dp_dev.h"
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/version.h>
@@ -809,7 +811,7 @@ bool nss_dp_is_phy_dev(struct net_device *dev)
 /*
  * nss_dp_adjust_link()
  */
-void nss_dp_adjust_link(struct net_device *netdev)
+static void nss_dp_adjust_link(struct net_device *netdev)
 {
 	struct nss_dp_dev *dp_priv = netdev_priv(netdev);
 	int current_state = dp_priv->link_state;
@@ -1135,6 +1137,7 @@ int32_t nss_dp_get_port_num(struct net_device *netdev)
 }
 EXPORT_SYMBOL(nss_dp_get_port_num);
 
+#ifdef NSS_DP_PPEDS_SUPPORT
 /*
  * nss_dp_ppeds_get_ops()
  *	API to get PPE-DS operations
@@ -1144,6 +1147,7 @@ struct nss_dp_ppeds_ops *nss_dp_ppeds_get_ops(void)
 	return nss_dp_ppeds_ops_get();
 }
 EXPORT_SYMBOL(nss_dp_ppeds_get_ops);
+#endif
 
 /*
  * nss_dp_nsm_sawf_sc_stats_read()
@@ -1158,7 +1162,7 @@ EXPORT_SYMBOL(nss_dp_nsm_sawf_sc_stats_read);
 /*
  * nss_dp_init()
  */
-int __init nss_dp_init(void)
+static int __init nss_dp_init(void)
 {
 	int ret, i;
 
@@ -1255,7 +1259,7 @@ int __init nss_dp_init(void)
 /*
  * nss_dp_exit()
  */
-void __exit nss_dp_exit(void)
+static void __exit nss_dp_exit(void)
 {
 	/*
 	 * Ensure netdev remove is done before HAL cleanup.
