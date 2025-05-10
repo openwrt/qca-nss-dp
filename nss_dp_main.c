@@ -1032,7 +1032,11 @@ fail:
  * Note: We only remove the physical ports here. Virtual
  * port devices are removed explicitly by the VP module.
  */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+static void nss_dp_remove(struct platform_device *pdev)
+#else
 static int nss_dp_remove(struct platform_device *pdev)
+#endif
 {
 	uint32_t i;
 	struct nss_dp_dev *dp_priv;
@@ -1076,8 +1080,9 @@ static int nss_dp_remove(struct platform_device *pdev)
 		free_netdev(dp_priv->netdev);
 		dp_global_ctx.nss_dp[i] = NULL;
 	}
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 	return 0;
+#endif
 }
 
 static struct of_device_id nss_dp_dt_ids[] = {
@@ -1088,7 +1093,11 @@ MODULE_DEVICE_TABLE(of, nss_dp_dt_ids);
 
 static struct platform_driver nss_dp_drv = {
 	.probe = nss_dp_probe,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+	.remove_new = nss_dp_remove,
+#else
 	.remove = nss_dp_remove,
+#endif
 	.driver = {
 		   .name = "nss-dp",
 		   .owner = THIS_MODULE,
