@@ -92,6 +92,9 @@ int nss_dp_mht_multi_txring = 0;
 module_param(nss_dp_mht_multi_txring, int, S_IRUGO);
 MODULE_PARM_DESC(nss_dp_mht_multi_txring, "MHT SW ports to Tx rings map");
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0))
+#include <net/rps.h>
+#endif
 
 #if defined(NSS_DP_EDMA_V2)
 int nss_dp_rx_fc_xoff = NSS_DP_RX_FC_XOFF_DEF;
@@ -524,15 +527,23 @@ static int nss_dp_rx_flow_steer(struct net_device *netdev, const struct sk_buff 
 	rxflow = &flow_table->flows[hash & flow_table->mask];
 	rxcpu = (uint32_t)rxflow->cpu;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0))
+	sock_flow_table = rcu_dereference(net_hotdata.rps_sock_flow_table);
+#else
 	sock_flow_table = rcu_dereference(rps_sock_flow_table);
+#endif
 	if (!sock_flow_table) {
 		netdev_dbg(netdev, "Global RPS flow table not found\n");
 		return -EINVAL;
 	}
 
 	rfscpu = sock_flow_table->ents[hash & sock_flow_table->mask];
-	rfscpu &= rps_cpu_mask;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0))
+	rfscpu &= net_hotdata.rps_cpu_mask;
+#else
+	rfscpu &= rps_cpu_mask;
+#endif
 	if (rxcpu == rfscpu)
 		return 0;
 
