@@ -33,6 +33,24 @@ bool nss_dp_hal_nsm_sawf_sc_stats_read(struct nss_dp_hal_nsm_sawf_sc_stats *nsm_
 }
 
 /*
+ * nss_dp_hal_deinit_soc_priv_flags()
+ *	API to de-initialize DP DEV flags field
+ */
+void nss_dp_hal_deinit_soc_priv_flags(struct nss_dp_dev *dp_priv)
+{
+	return;
+}
+
+/*
+ * nss_dp_hal_init_soc_priv_flags()
+ *	API to initialize DP DEV flags field
+ */
+void nss_dp_hal_init_soc_priv_flags(struct nss_dp_dev *dp_priv)
+{
+	return;
+}
+
+/*
  * nss_dp_hal_get_data_plane_ops()
  *	Return the data plane ops for registered data plane.
  */
@@ -67,6 +85,19 @@ int32_t nss_dp_hal_clock_set_and_enable(struct device *dev, const char *id, unsi
 		return -1;
 	}
 
+	return 0;
+}
+
+/*
+ * nss_dp_hal_cache_info_setup()
+ *	Dummy wrap-around function.
+ *	Returns 0: success
+ */
+int nss_dp_hal_cache_info_setup(void *ctx)
+{
+	struct edma_gbl_ctx *egc = (struct edma_gbl_ctx *)ctx;
+
+	egc->cache_data = NULL;
 	return 0;
 }
 
@@ -224,7 +255,7 @@ int32_t nss_dp_hal_hw_reset(void *ctx)
  	 *
  	 * TODO: Revisit if this global storage is actually required.
  	 */
-	edma_gbl_ctx.hw_rst = edma_hw_rst;
+	edma_gbl_ctx->hw_rst = edma_hw_rst;
 
 	reset_control_assert(edma_hw_rst);
 	udelay(100);

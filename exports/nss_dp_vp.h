@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022, 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,6 +17,9 @@
 #ifndef __NSS_DP_VP_H__
 #define __NSS_DP_VP_H__
 
+#include <linux/bitmap.h>
+#include <ppe_drv_public.h>
+
 /*
  * nss_dp_vp_tx_info
  *	VP Tx info.
@@ -26,6 +29,7 @@ struct nss_dp_vp_tx_info {
 	uint8_t sc;			/**< Service code. */
 	uint8_t svp;			/**< Source VP number. */
 	uint8_t dvp;			/**< Destination VP number. */
+	uint8_t egress_macid;		/**< Egress Port Mac Id. */
 	bool fake_mac;			/**< Needs Fake Mac. */
 };
 
@@ -34,30 +38,40 @@ struct nss_dp_vp_tx_info {
  *	VP info struct struct
  */
 struct nss_dp_vp_rx_info {
+	struct napi_struct *napi;	/* RX NAPI */
+	uint32_t batch_bytes;		/* Total bytes carried by batch of skbs */
+	int32_t flow_idx;		/* Flow index of a packet */
+	uint16_t l3offset;		/* L3 offset of packet */
 	uint8_t dvp;			/* Destination VP number */
 	uint8_t svp;			/* Source VP number */
-	uint16_t l3offset;		/* L3 offset of packet */
 	uint8_t ip_summed;		/* IP checksum */
-	int32_t flow_idx;		/* Flow index of a packet */
-	struct napi_struct *napi;	/* RX NAPI */
+	bool fake_mac;			/* Fake Mac Present */
+	bool qdisc_valid;		/* Qdisc valid */
 };
 
 /*
- * nss_dp_vp_skb_list
- *	skb list of a VP
+ * nss_dp_vp_node_info
+ *	PPE VP node info
  */
-struct nss_dp_vp_skb_list{
-	struct nss_dp_vp_skb_list *next;
-	struct sk_buff_head skb_list;	/* skb list*/
-	uint16_t len;			/* Total data length carried by these skb*/
+struct nss_dp_vp_node_info {
+	uint32_t bytes;			/* Total bytes carried batch of skbs */
 	uint8_t dvp;			/* Destination VP */
+};
+
+/*
+ * nss_dp_vp_node
+ *	Node for VP specific operations(batching)
+ */
+struct nss_dp_vp_node {
+	struct sk_buff_head head;		/* Skb list */
+	struct nss_dp_vp_node_info info;	/* VP node info */
 };
 
 /*
  * nss_dp_vp_list_rx_cb_t
  *	Vp rx handler callback typedef
  */
-typedef void (*nss_dp_vp_list_rx_cb_t)( struct nss_dp_vp_skb_list *vp_rx_list);
+typedef void (*nss_dp_vp_list_rx_cb_t)(struct sk_buff_head *head, struct nss_dp_vp_rx_info *rx_info);
 
 /*
  * nss_dp_vp_rx_cb_t
@@ -65,22 +79,69 @@ typedef void (*nss_dp_vp_list_rx_cb_t)( struct nss_dp_vp_skb_list *vp_rx_list);
  */
 typedef void (*nss_dp_vp_rx_cb_t)(struct sk_buff *skb, struct nss_dp_vp_rx_info *vprxi);
 
+/*
+ * nss_dp_vp_rx_ops
+ *	VP rx operations
+ */
+struct nss_dp_vp_rx_ops {
+	nss_dp_vp_list_rx_cb_t list_cb;
+	nss_dp_vp_rx_cb_t cb;
+	void *app_data;
+};
+
+/*
+ * nss_dp_vp_ctx
+ *	Context per VP node
+ */
+struct nss_dp_vp_ctx {
+	DECLARE_BITMAP(active_vps, PPE_DRV_VIRTUAL_MAX);
+	struct nss_dp_vp_node nodes[PPE_DRV_VIRTUAL_MAX];
+	struct nss_dp_vp_rx_ops ops;
+};
+
 /**
  * nss_dp_vp_rx_register_cb
  *	Register handler for VP rx processing.
  *
  * @datatypes
  * nss_dp_vp_rx_cb_t
- * nss_dp_vp_list_rx_cb_t
  *
  * @param[in] nss_dp_vp_tx_info Pointer to VP rx handler.
- * @param[in] nss_dp_vp_list_rx_cb_t Pointer to VP list handler.
+ *
+ * @return
+ * True or false.
+ *
+ * @note: This API needs to deprecated and replaced with nss_dp_vp_rx_register_ops()
+ */
+bool nss_dp_vp_rx_register_cb(nss_dp_vp_rx_cb_t cb);
+
+/**
+ * nss_dp_vp_rx_register_ops
+ *	Register ops for VP rx processing.
+ *
+ * @datatypes
+ * struct nss_dp_vp_rx_ops
+ *
+ * @param[in] ops Pointer to VP rx ops.
  *
  * @return
  * True or false.
  */
-bool nss_dp_vp_rx_register_cb(nss_dp_vp_rx_cb_t cb, \
-		nss_dp_vp_list_rx_cb_t list_cb);
+void nss_dp_vp_rx_register_ops(struct nss_dp_vp_rx_ops *ops);
+
+/**
+ * nss_dp_vp_rx_unregister_ops
+ *	Unregister ops for VP rx processing.
+ *
+ * @datatypes
+ * None
+ *
+ * @param[in]
+ *
+ * @return
+ * None.
+ */
+void nss_dp_vp_rx_unregister_ops(void);
 
 /**
  * nss_dp_vp_rx_unregister_cb

@@ -31,6 +31,24 @@ bool nss_dp_hal_nsm_sawf_sc_stats_read(struct nss_dp_hal_nsm_sawf_sc_stats *nsm_
 }
 
 /*
+ * nss_dp_hal_deinit_soc_priv_flags()
+ *	API to de-initialize DP DEV flags field
+ */
+void nss_dp_hal_deinit_soc_priv_flags(struct nss_dp_dev *dp_priv)
+{
+	return;
+}
+
+/*
+ * nss_dp_hal_init_soc_priv_flags()
+ *	API to initialize DP DEV flags field
+ */
+void nss_dp_hal_init_soc_priv_flags(struct nss_dp_dev *dp_priv)
+{
+	return;
+}
+
+/*
  * nss_dp_hal_tcsr_base_get()
  *	Reads TCSR base address from DTS
  */

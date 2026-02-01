@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2021, The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,6 +15,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
+#include <asm/cacheflush.h>
 
 #ifndef __NSS_DP_ARCH_H__
 #define __NSS_DP_ARCH_H__
@@ -48,6 +50,7 @@
  */
 #define NSS_DP_HAL_RX_NAPI_BUDGET	128
 #define NSS_DP_HAL_TX_NAPI_BUDGET	512
+#define NSS_DP_HAL_RXFILL_NAPI_BUDGET	512
 
 /*
  * Timestamp information for the latency measurement
@@ -107,6 +110,22 @@
 #define NSS_DP_EDMA_NSSNOC_MEM_NOC_1_CLK_FREQ		533333333
 #define NSS_DP_EDMA_NSSNOC_MEMNOC_CLK_FREQ		533333333
 
+#define EDMA_MAX_DMA_MASK_BIT_HI 32
+
+/*
+ * SoC specific RX ring max value
+ */
+#if defined (NSS_DP_VP_RINGS)
+#define NSS_DP_VP_NUM_RINGS 1
+#else
+#define NSS_DP_VP_NUM_RINGS 0
+#endif
+
+/*
+ * SoC specific RX ring max value
+ */
+#define EDMA_RX_DESC_RING_MAX (NR_CPUS + NSS_DP_VP_NUM_RINGS)
+
 /**
  * nss_dp_hal_gmac_stats
  *	The per-GMAC statistics structure.
@@ -149,9 +168,30 @@ extern bool nss_dp_hal_nsm_sawf_sc_stats_read(struct nss_dp_hal_nsm_sawf_sc_stat
 extern int32_t nss_dp_hal_clock_set_and_enable(struct device *dev, const char *id, unsigned long rate);
 extern struct nss_dp_data_plane_ops nss_dp_edma_ops;
 extern int32_t nss_dp_hal_configure_clocks(void *ctx);
+extern int nss_dp_hal_cache_info_setup(void *ctx);
 extern int32_t nss_dp_hal_hw_reset(void *ctx);
 #ifdef NSS_DP_PPEDS_SUPPORT
 extern struct nss_dp_ppeds_ops edma_ppeds_ops;
 #endif
+
+static inline void edma_dmac_inv_range(const void *start, const void *end){
+
+        dmac_inv_range(start, end);
+}
+
+static inline void edma_dmac_inv_range_no_dsb(const void *start, const void *end){
+
+        dmac_inv_range_no_dsb(start, end);
+}
+
+static inline void edma_dmac_clean_range_no_dsb(const void *start, const void *end){
+
+        dmac_clean_range_no_dsb(start, end);
+}
+
+static inline void edma_dsb(void){
+
+        dsb(st);
+}
 
 #endif /* __NSS_DP_ARCH_H__ */

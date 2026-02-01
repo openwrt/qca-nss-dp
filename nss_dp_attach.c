@@ -87,9 +87,9 @@ int nss_dp_override_data_plane(struct net_device *netdev,
 
 	if (!dp_ops->open || !dp_ops->close || !dp_ops->link_state
 		|| !dp_ops->mac_addr || !dp_ops->change_mtu || !dp_ops->xmit
-		|| !dp_ops->set_features || !dp_ops->pause_on_off || !dp_ops->deinit) {
+		|| !dp_ops->set_features || !dp_ops->pause_on_off || !dp_ops->init || !dp_ops->deinit) {
 		netdev_dbg(netdev, "All the op functions must be present, reject this registeration\n");
-		return NSS_DP_FAILURE;
+		return -EINVAL;
 	}
 
 	/*
@@ -129,7 +129,7 @@ int nss_dp_override_data_plane(struct net_device *netdev,
 	}
 	dp_dev->drv_flags |= NSS_DP_PRIV_FLAG(INIT_DONE);
 
-	return NSS_DP_SUCCESS;
+	return 0;
 }
 EXPORT_SYMBOL(nss_dp_override_data_plane);
 

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2021-2024, Qualcomm Innovation Center, Inc. All rights reserved
+ * Copyright (c) 2021-2025, Qualcomm Innovation Center, Inc. All rights reserved
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -28,6 +28,10 @@
 #include <linux/switch.h>
 #include <linux/version.h>
 #include <linux/ethtool.h>
+
+#ifdef CONFIG_QCA_MINIDUMP
+#include <soc/qcom/ctx-save.h>
+#endif
 
 #include "nss_dp_api_if.h"
 #include "nss_dp_hal_if.h"
@@ -112,7 +116,7 @@
 #define NSS_DP_VP_MAC_ID		(NSS_DP_HAL_MAX_PORTS + 2)
 #endif
 
-#if defined(NSS_DP_NETSTANDBY) && defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_NETSTANDBY) && (defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX))
 #define NSS_DP_EDMA_SWITCH_MHT_DEV_ID	1
 #endif
 
@@ -248,6 +252,9 @@ struct nss_dp_dev {
 	struct nss_dp_hal_info dp_info;
 					/* SoC specific data plane information */
 
+	struct nss_dp_vlan_append_info vlan_info;
+					/* VLAN header insertion details */
+
 	/* switchdev related attributes */
 #ifdef CONFIG_NET_SWITCHDEV
 	u8 stp_state;			/* STP state of this physical port */
@@ -280,7 +287,6 @@ struct nss_dp_global_ctx {
 #if defined(NSS_DP_EDMA_LOOPBACK_SUPPORT)
 	uint32_t edma_loopback_ring_size;	/* Loopback ring size */
 	uint32_t edma_loopback_buffer_size;	/* Loopback ring size */
-	bool edma_disable_loopback;		/* Disable loopback ring configuration */
 #endif
 	bool overwrite_mode;		/* Overwrite mode for Rx processing */
 	bool page_mode;			/* Page mode for Rx processing */
@@ -298,6 +304,11 @@ extern struct nss_dp_global_ctx dp_global_ctx;
 extern struct nss_dp_data_plane_ctx dp_global_data_plane_ctx[NSS_DP_MAX_PORTS];
 extern int nss_dp_rx_napi_budget;
 extern int nss_dp_tx_napi_budget;
+extern int nss_dp_rxfill_napi_budget;
+
+#if defined(NSS_DP_EDMA_LOOPBACK_SUPPORT)
+extern uint32_t edma_loopback_feature_type;
+#endif
 
 #if defined(NSS_DP_EDMA_V2)
 extern int nss_dp_rx_fc_xon;
@@ -331,6 +342,7 @@ enum nss_dp_state {
 	__NSS_DP_RXCSUM,	/* Rx checksum enabled			*/
 	__NSS_DP_AUTONEG,	/* Autonegotiation Enabled		*/
 	__NSS_DP_LINKPOLL,	/* Poll link status			*/
+	__NSS_DP_NO_LIST,	/* Deliver the packet directly to the Kernel stack without list based packet processing	*/
 };
 
 /*
@@ -381,5 +393,27 @@ static inline uint32_t nss_dp_get_idx_from_macid(uint32_t macid)
 	return (macid - 1);
 }
 #endif
+
+/*
+ * nss_dp_minidump_log()
+ *	To log data structures into minidump output
+ */
+static inline void nss_dp_minidump_log(void *start_addr, uint64_t size, const char *name) {
+#ifdef CONFIG_QCA_MINIDUMP
+	if (minidump_add_segments((uint64_t)(uintptr_t)(start_addr), size, QCA_WDT_LOG_DUMP_TYPE_MOD, name, MINIDUMP_CRASH_TYPE_NSS, "qca_nss_dp") != 0)
+		pr_warn("minidump_log failed for structure type %s at address %p\n", name, start_addr);
+#endif
+}
+
+/*
+ * nss_dp_minidump_free()
+ *	To unregister data structures from minidump tlv
+ */
+static inline void nss_dp_minidump_free(void *start_addr, const char *name) {
+#ifdef CONFIG_QCA_MINIDUMP
+	if (minidump_remove_segments((uint64_t)(uintptr_t)(start_addr)) != 0)
+		pr_warn("minidump_free failed for structure %s at address %p\n", name, start_addr);
+#endif
+}
 
 #endif	/* __NSS_DP_DEV_H__ */

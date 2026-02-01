@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2021-2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2025, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -30,6 +30,33 @@
 
 struct nss_dp_netstandby_gbl_ctx standby_gbl_ctx;
 
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
+/*
+ * nss_dp_netstandby_is_switch_connected()
+ *	Check if switch is connected
+ */
+bool nss_dp_netstandby_is_switch_connected(struct nss_dp_netstandby_gbl_ctx *gbl_ctx)
+{
+	struct nss_dp_global_ctx *ctx = gbl_ctx->ctx;
+	struct nss_dp_dev *dp_priv;
+	int i = 0;
+
+	for (i = 0; i < NSS_DP_MAX_PORTS; i++) {
+		dp_priv = ctx->nss_dp[i];
+		if (!dp_priv) {
+			pr_warn("%p Error in retrieving netdev for ethernet port %d\n", ctx, i);
+			continue;
+		}
+
+		if (dp_priv->is_switch_connected)
+			return true;
+	}
+
+
+	return false;
+}
+#endif
+
 /*
  * nss_dp_netstandby_exit_standby()
  *	Exit standby API()
@@ -45,12 +72,17 @@ int nss_dp_netstandby_exit_standby(void *app_data, struct netstandby_exit_info *
 		return -ENOTSUPP;
 	}
 
-#if defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
+	if (!nss_dp_netstandby_is_switch_connected(gbl_ctx))
+		goto exit_completion;
+
 	sw_err = fal_erp_standby_exit(DP_STANDBY_SWITCH_MHT_DEV_ID);
 	if (sw_err != SW_OK) {
 		pr_warn("Error in bringing MHT device out of power state\n");
 		return -ENOTSUPP;
 	}
+
+exit_completion:
 #endif
 
 	/*
@@ -79,7 +111,7 @@ int nss_dp_netstandby_enter_standby(void *app_data, struct netstandby_entry_info
 	struct net_device *dev;
 	int32_t mac_id = 0;
 	uint32_t port_active_bmap = 0;
-#if defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
 	uint32_t port_mht_active_bmap = 0;
 	bool all_mht_down = false;
 	int index;
@@ -108,7 +140,7 @@ int nss_dp_netstandby_enter_standby(void *app_data, struct netstandby_entry_info
 			for (j = 0; j < entry_info->iface_cnt; j++) {
 				if (entry_info->dev[j] == dev) {
 					mac_id = ctx->nss_dp[i]->macid;
-#if defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
 					index = nss_dp_get_idx_from_macid(mac_id);
 					if (ctx->nss_dp[index]->is_switch_connected) {
 						break;
@@ -128,7 +160,10 @@ int nss_dp_netstandby_enter_standby(void *app_data, struct netstandby_entry_info
 		return -ENOTSUPP;
 	}
 
-#if defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
+	if (!nss_dp_netstandby_is_switch_connected(gbl_ctx))
+		goto enter_completion;
+
 	if (entry_info->nss_info.port_id > NSS_DP_HAL_MHT_SWT_MAX_PORTS) {
 		pr_warn("%p Port_id out of range(%d)\n", ctx, entry_info->nss_info.port_id);
 		fal_erp_standby_exit(DP_STANDBY_SWITCH_DEV_ID);
@@ -156,6 +191,7 @@ int nss_dp_netstandby_enter_standby(void *app_data, struct netstandby_entry_info
 			return -EINVAL;
 		}
 	}
+enter_completion:
 #endif
 
 	/*
@@ -180,7 +216,7 @@ bool nss_dp_get_eth_info(struct nss_dp_eth_netdev_info ethinfo[], uint8_t array_
 	struct nss_dp_global_ctx *dp_global = &dp_global_ctx;
 	struct nss_dp_dev *dp_priv;
 	uint8_t i  = 0;
-#if defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
 	int port_id = 0;
 	sw_error_t ret;
 	a_bool_t status;
@@ -198,7 +234,7 @@ bool nss_dp_get_eth_info(struct nss_dp_eth_netdev_info ethinfo[], uint8_t array_
 		}
 
 		ethinfo[i].netdev = dp_priv->netdev;
-#if defined(NSS_DP_IPQ53XX)
+#if defined(NSS_DP_IPQ53XX) || defined(NSS_DP_IPQ54XX)
 		if (dp_global->nss_dp[i]->is_switch_connected) {
 			ethinfo[i].switch_connected = true;
 			for (port_id = 1; port_id <= MAX_MHT_PORTS ; port_id++) {

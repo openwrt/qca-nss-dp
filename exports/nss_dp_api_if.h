@@ -2,7 +2,7 @@
  **************************************************************************
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -62,6 +62,8 @@
 
 #define MAX_MHT_PORTS	4
 
+#define MAX_ETH_TYPES 2
+
 /**
  * nss_dp_eth_netdev_info
  * 	Structure for retrieving the eth info
@@ -86,6 +88,16 @@ struct nss_dp_data_plane_ctx {
  */
 struct nss_dp_gmac_stats {
 	struct nss_dp_hal_gmac_stats stats;
+};
+
+/**
+ * nss_dp_vlan_append_info
+ *	VLAN append info structure.
+ */
+struct nss_dp_vlan_append_info {
+	bool vlan_en;				/**< Vlan Append Flag */
+	uint16_t ether_types[MAX_ETH_TYPES];	/**< Ethernet Type */
+	uint32_t vlan_tag_info;			/**< VLAN Header Info */
 };
 
 /**
