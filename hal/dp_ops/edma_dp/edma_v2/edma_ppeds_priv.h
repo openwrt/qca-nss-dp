@@ -95,9 +95,9 @@ struct edma_ppeds {
 	uint32_t rxfill_intr;			/* PPE-DS EDMA Rxfill IRQ */
 	uint32_t rxdesc_intr;			/* PPE-DS EDMA Rx IRQ */
 	uint8_t db_idx;				/* PPE-DS node index */
-	nss_dp_ppeds_handle_t ppeds_handle;	/* PPE-DS handle */
 	uint32_t umac_reset_inprogress;		/* Umac reset progress status */
 	unsigned long service_running;		/* PPE-DS ring usage service status */
+	nss_dp_ppeds_handle_t ppeds_handle;	/* PPE-DS handle */
 };
 
 /*

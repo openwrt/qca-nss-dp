@@ -1428,7 +1428,7 @@ nss_dp_ppeds_handle_t *edma_ppeds_inst_alloc(const struct nss_dp_ppeds_cb *ops, 
 	struct edma_ppeds *ppeds_node;
 	uint32_t i;
 	struct edma_ppeds_drv *drv = &edma_gbl_ctx.ppeds_drv;
-	int size = priv_size + sizeof(struct edma_ppeds);
+	size_t size = struct_size(ppeds_node, ppeds_handle.priv, priv_size);
 
 	if (!ops || !ops->rx || !ops->rx_fill || !ops->rx_release
 			|| !ops->tx_cmpl) {
@@ -1436,7 +1436,7 @@ nss_dp_ppeds_handle_t *edma_ppeds_inst_alloc(const struct nss_dp_ppeds_cb *ops, 
 		return NULL;
 	}
 
-	edma_debug("ppeds node size %lu total size %d\n", sizeof(struct edma_ppeds),  size);
+	edma_debug("ppeds node size %zu total size %zu\n", sizeof(struct edma_ppeds),  size);
 	ppeds_node = (struct edma_ppeds *)kzalloc(size, GFP_KERNEL);
 	if (!ppeds_node) {
 		edma_err("Cannot allocate memory for ppeds node\n");
