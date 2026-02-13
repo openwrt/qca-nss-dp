@@ -270,23 +270,17 @@ static int32_t qcom_get_strings(struct nss_gmac_hal_dev *nghd, int32_t sset,
 	switch (sset) {
 	case ETH_SS_STATS:
 		for (i = 0; i < QCOM_STATS_LEN; i++) {
-			memcpy(data, qcom_gstrings_stats[i].stat_string,
-				strlen(qcom_gstrings_stats[i].stat_string));
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, qcom_gstrings_stats[i].stat_string);
 		}
 
 		for (i = 0; i < QCOM_MIB_STATS_LEN; i++) {
-			memcpy(data, qcom_gstrings_mib_stats[i].stat_string,
-				strlen(qcom_gstrings_mib_stats[i].stat_string));
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, qcom_gstrings_mib_stats[i].stat_string);
 		}
 		break;
 
 	case ETH_SS_PRIV_FLAGS:
 		for (i = 0; i < QCOM_PRIV_FLAGS_LEN; i++) {
-			memcpy(data, qcom_strings_priv_flags[i],
-				strlen(qcom_strings_priv_flags[i]));
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, qcom_strings_priv_flags[i]);
 		}
 		break;
 

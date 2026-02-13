@@ -76,8 +76,7 @@ static void nss_dp_get_strings(struct net_device *netdev, uint32_t stringset,
 
 	if (stringset == ETH_SS_PRIV_FLAGS) {
 		for (i = 0; i < NSS_DP_MAX_ETHTOOL_PRIV_FLAGS; i++) {
-			memcpy(data + (i * ETH_GSTRING_LEN),
-					nss_dp_priv_flg_str[i], ETH_GSTRING_LEN);
+			ethtool_puts(&data, nss_dp_priv_flg_str[i]);
 		}
 	}
 }

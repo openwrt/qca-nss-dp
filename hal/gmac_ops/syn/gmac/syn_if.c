@@ -589,15 +589,11 @@ static int32_t syn_get_strings(struct nss_gmac_hal_dev *nghd,
 	switch (stringset) {
 	case ETH_SS_STATS:
 		for (i = 0; i < SYN_STATS_LEN; i++) {
-			memcpy(data, syn_gstrings_stats[i].stat_string,
-					ETH_GSTRING_LEN);
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, syn_gstrings_stats[i].stat_string);
 		}
 
 		for (i = 0; i < SYN_STATS_MIB_STATS_LEN; i++) {
-			memcpy(data, syn_gstrings_mib_stats[i].stat_string,
-					ETH_GSTRING_LEN);
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, syn_gstrings_mib_stats[i].stat_string);
 		}
 
 		break;

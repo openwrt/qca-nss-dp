@@ -317,24 +317,18 @@ static int32_t syn_get_strings(struct nss_gmac_hal_dev *nghd,
 	switch (stringset) {
 	case ETH_SS_STATS:
 		for (i = 0; i < SYN_STATS_LEN; i++) {
-			memcpy(data, syn_gstrings_stats[i].stat_string,
-				strlen(syn_gstrings_stats[i].stat_string));
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, syn_gstrings_stats[i].stat_string);
 		}
 
 		for (i = 0; i < SYN_MIB_STATS_LEN; i++) {
-			memcpy(data, syn_gstrings_xmib_stats[i].stat_string,
-				strlen(syn_gstrings_xmib_stats[i].stat_string));
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, syn_gstrings_xmib_stats[i].stat_string);
 		}
 
 		break;
 
 	case ETH_SS_PRIV_FLAGS:
 		for (i = 0; i < SYN_PRIV_FLAGS_LEN; i++) {
-			memcpy(data, syn_strings_priv_flags[i],
-				strlen(syn_strings_priv_flags[i]));
-			data += ETH_GSTRING_LEN;
+			ethtool_puts(&data, syn_strings_priv_flags[i]);
 		}
 
 		break;
