@@ -46,5 +46,7 @@ extern struct nss_dp_data_plane_ops *nss_dp_hal_get_data_plane_ops(void);
 extern bool nss_dp_hal_init(void);
 extern void nss_dp_hal_cleanup(void);
 extern struct nss_dp_ppeds_ops* nss_dp_ppeds_ops_get(void);
+extern void nss_dp_hal_init_soc_priv_flags(struct nss_dp_dev *dp_priv);
+extern void nss_dp_hal_deinit_soc_priv_flags(struct nss_dp_dev *dp_priv);
 
 #endif	/* __NSS_DP_HAL_H__ */

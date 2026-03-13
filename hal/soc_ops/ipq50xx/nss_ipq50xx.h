@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -38,6 +38,7 @@
  */
 #define NSS_DP_HAL_RX_NAPI_BUDGET		32
 #define NSS_DP_HAL_TX_NAPI_BUDGET		32
+#define NSS_DP_HAL_RXFILL_NAPI_BUDGET		0
 
 /*
  * TCSR_GMAC_AXI_CACHE_OVERRIDE register size

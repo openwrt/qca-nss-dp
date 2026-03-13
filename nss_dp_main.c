@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2021-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2025, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -43,7 +43,6 @@
 #include "nss_dp_hal.h"
 
 #define JUMBO_MRU_3K 3072
-#define NSS_DP_CAPWAP_VP_RX_CORE_INVALID 0XFFFF
 
 /* ipq40xx_mdio_data */
 struct ipq40xx_mdio_data {
@@ -73,13 +72,13 @@ int tx_requeue_stop = 1;
 module_param(tx_requeue_stop, int, 0640);
 MODULE_PARM_DESC(tx_requeue_stop, "disable tx requeue function");
 
-uint32_t nss_dp_capwap_vp_rx_core = NSS_DP_CAPWAP_VP_RX_CORE_INVALID;
-module_param(nss_dp_capwap_vp_rx_core, int, S_IRUGO);
-MODULE_PARM_DESC(nss_dp_capwap_vp_rx_core, "Capwap VP handling core");
-
 int nss_dp_rx_napi_budget = NSS_DP_HAL_RX_NAPI_BUDGET;
 module_param(nss_dp_rx_napi_budget, int, S_IRUGO);
 MODULE_PARM_DESC(nss_dp_rx_napi_budget, "Rx NAPI budget");
+
+int nss_dp_rxfill_napi_budget = NSS_DP_HAL_RXFILL_NAPI_BUDGET;
+module_param(nss_dp_rxfill_napi_budget, int, S_IRUGO);
+MODULE_PARM_DESC(nss_dp_rxfill_napi_budget, "Rx-fill NAPI budget");
 
 int nss_dp_tx_napi_budget = NSS_DP_HAL_TX_NAPI_BUDGET;
 module_param(nss_dp_tx_napi_budget, int, S_IRUGO);
@@ -156,9 +155,12 @@ int edma_loopback_buffer_size = EDMA_LOOPBACK_BUFFER_SIZE;
 module_param(edma_loopback_buffer_size, int, S_IRUGO);
 MODULE_PARM_DESC(edma_loopback_buffer_size, "Loopback buffer size");
 
-int edma_loopback_disable = 0;
-module_param(edma_loopback_disable, int, S_IRUGO);
-MODULE_PARM_DESC(edma_loopback_disable, "Loopback disable");
+/*
+ * Module parameter to enable / disable spectific loopback feature type
+ */
+uint32_t edma_loopback_feature_type = 1;
+module_param(edma_loopback_feature_type, int, 0644);
+MODULE_PARM_DESC(edma_loopback_feature_type, "loopback feature type 0x0: disabled, 0x1: default, 0x2: ddr extended buffer, 0x4: gretap to mapt");
 #endif
 
 /*
@@ -901,6 +903,8 @@ static int32_t nss_dp_probe(struct platform_device *pdev)
 	nss_dp_switchdev_setup(netdev);
 #endif
 
+	nss_dp_hal_init_soc_priv_flags(dp_priv);
+
 	ret = nss_dp_of_get_pdata(np, netdev, &gmac_hal_pdata);
 	if (ret != 0) {
 		goto fail;
@@ -1002,10 +1006,10 @@ static int32_t nss_dp_probe(struct platform_device *pdev)
 		phys_addr_t sec_addr = NSS_DP_GMAC_TS_ADDR_SEC(netdev->base_addr);
 		phys_addr_t nsec_addr = NSS_DP_GMAC_TS_ADDR_NSEC(netdev->base_addr);
 
-		edma_gbl_ctx.tstamp_sec = ioremap_nocache(sec_addr, sizeof(uint32_t));
-		edma_gbl_ctx.tstamp_nsec = ioremap_nocache(nsec_addr, sizeof(uint32_t));
+		edma_gbl_ctx->tstamp_sec = ioremap_nocache(sec_addr, sizeof(uint32_t));
+		edma_gbl_ctx->tstamp_nsec = ioremap_nocache(nsec_addr, sizeof(uint32_t));
 
-		if (unlikely(!edma_gbl_ctx.tstamp_sec || !edma_gbl_ctx.tstamp_nsec)) {
+		if (unlikely(!edma_gbl_ctx->tstamp_sec || !edma_gbl_ctx->tstamp_nsec)) {
 			pr_err("Unable to map the timestamp registers, sec addr:0x%llx,"
 					" nsec addr: 0x%llx\n", sec_addr, nsec_addr);
 			return 0;
@@ -1067,6 +1071,8 @@ static int nss_dp_remove(struct platform_device *pdev)
 #ifdef CONFIG_NET_SWITCHDEV
 		nss_dp_switchdev_cleanup(dp_priv->netdev);
 #endif
+
+		nss_dp_hal_deinit_soc_priv_flags(dp_priv);
 
 		/*
 		 * Execution of unregister_netdev may access statistics of the
@@ -1187,17 +1193,8 @@ static int __init nss_dp_init(void)
 	dp_global_ctx.rx_buf_size = NSS_DP_RX_BUFFER_SIZE;
 
 #if defined(NSS_DP_EDMA_LOOPBACK_SUPPORT)
-	if (edma_loopback_ring_size) {
-		dp_global_ctx.edma_loopback_ring_size = edma_loopback_ring_size;
-	}
-
-	if (edma_loopback_buffer_size) {
-		dp_global_ctx.edma_loopback_buffer_size = edma_loopback_buffer_size;
-	}
-
-	if (edma_loopback_disable) {
-		dp_global_ctx.edma_disable_loopback = edma_loopback_disable;
-	}
+	dp_global_ctx.edma_loopback_ring_size = edma_loopback_ring_size;
+	dp_global_ctx.edma_loopback_buffer_size = edma_loopback_buffer_size;
 #endif
 
 	/*
